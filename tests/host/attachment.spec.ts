@@ -292,7 +292,7 @@ describe('attachment previews sweeper', () => {
 
   test('an expired preview directory is swept; a fresh one survives; the cap trims the oldest', async () => {
     const { home, previews } = sweeperStoreOf()
-    const clock = 1_000_000
+    const clock = Date.UTC(2026, 0, 1)
     const sweeper = makePreviewSweeper(() => clock, 0)
     try {
       const staleDir = join(previews, 'stale')
