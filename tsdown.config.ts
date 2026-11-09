@@ -215,6 +215,21 @@ const OUTPUT_COMMENTS = { legal: true, annotation: false, jsdoc: false } as cons
 
 export default defineConfig([
   {
+    name: `${pkg.name}/analysis`,
+    entry: { analysis: 'src/mcp/main.ts' },
+    outDir: 'lib',
+    format: ['esm'],
+    platform: 'node',
+    target: 'es2024',
+    fixedExtension: false,
+    dts: false,
+    clean: false,
+    sourcemap: false,
+    minify: !WATCH,
+    deps: { neverBundle: isProductionDependency },
+    outputOptions: { comments: OUTPUT_COMMENTS },
+  },
+  {
     name: pkg.name,
     entry: { index: 'src/host/index.ts' },
     outDir: 'lib',

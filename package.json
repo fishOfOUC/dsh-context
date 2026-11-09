@@ -1,16 +1,16 @@
 {
   "name": "dsh-context",
   "version": "0.83.0",
-  "description": "A DeepSeek Harness plugin for context insight and management, with context dashboard and context command, for understanding how the context is made of, and how it evolves.",
+  "description": "DeepSeek Harness context dashboards, AI session analysis tools, MCP access, and lossless JSON/JSONL exports.",
   "icon": "icon.svg",
   "author": "bowenliang123",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/bowenliang123/dsh-context.git"
+    "url": "git+https://github.com/fishOfOUC/dsh-context.git"
   },
-  "homepage": "https://github.com/bowenliang123/dsh-context",
+  "homepage": "https://github.com/fishOfOUC/dsh-context",
   "bugs": {
-    "url": "https://github.com/bowenliang123/dsh-context/issues"
+    "url": "https://github.com/fishOfOUC/dsh-context/issues"
   },
   "type": "module",
   "engines": {
@@ -18,6 +18,9 @@
     "dsh": ">=0.2.0-rc.2 || >=0.2.1-rc.2 || >=0.2.2-rc.1"
   },
   "main": "lib/index.js",
+  "bin": {
+    "dsh-context-analysis": "scripts/analysis.mjs"
+  },
   "types": "lib/index.d.ts",
   "exports": {
     ".": {
@@ -34,6 +37,9 @@
     "lib/client.js",
     "lib/index.js",
     "lib/index.d.ts",
+    "lib/analysis.js",
+    "scripts/analysis.mjs",
+    "docs/analysis.md",
     "cordis.patch.yml",
     "README.md",
     "LICENSE"
@@ -49,6 +55,7 @@
     "typecheck": "tsc --noEmit -p tsconfig.tests.json --incremental",
     "test": "vitest run --coverage",
     "coverage": "vitest run --coverage",
+    "analysis": "node scripts/analysis.mjs",
     "release": "node scripts/run-bash.mjs scripts/publish.sh",
     "social-preview": "node scripts/social-preview/generate.ts",
     "prepare": "husky && tsdown"
@@ -87,6 +94,7 @@
   ],
   "license": "Apache-2.0",
   "dependencies": {
+    "@modelcontextprotocol/server": "2.2.0",
     "zod": "4.4.3"
   },
   "peerDependencies": {

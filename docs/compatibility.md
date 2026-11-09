@@ -134,6 +134,8 @@ Last verified: **2026-11-09** (dsh-context `0.83.0`; dsh floors `0.2.0-rc.2`, `0
 
 ## 9 · Verification
 
+- **AI analysis seam:** optional native `tools.register` uses the canonical `output.schema`/`output.render`/`execute(args, exec)` contract present in `dsh-v0.2.0-rc.2:packages/core/tools/src/index.ts` and `dsh-v0.2.2-rc.1:packages/core/tools/src/contracts.ts`; the calling identity is `exec.agent.id`. Full-log reads use `sessionQuery.observeSession(..., {projectionMode:'none'})` and its disposable immutable cut, unchanged across the three floors (`dsh: packages/session-query/session-query/src/observation.ts`). Prepared cuts can contain recovery closers; exports represent observed events, not original persistence bytes. No projection state version changes. The stdio bridge is a separate entry and never loads MCP runtime into the plugin host.
+
 *How every claim above is proven.*
 
 - **Check — supported-set lockstep:** `tests/compat/manifest.spec.ts` fails unless `dshReleases`, `tests/baselines.ts` and both CI workflows' fetched tags name the same per-line floors, the ranges admit each floor release, each line final and `0.2.2-alpha.3` while refusing `0.1.7*` and `0.2.0-rc.1`, and `BASELINE_DSH_VERSION` equals the lowest floor.

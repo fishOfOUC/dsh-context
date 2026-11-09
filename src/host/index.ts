@@ -1,5 +1,7 @@
 import type { Context } from '@deepseek-ai/cordis'
 import { createContextActivityDefinition } from './activity'
+import { createAnalysisService } from './analysis'
+import { watchAnalysisInterfaces } from './analysisRoutes'
 import { createCatalogService } from './catalog'
 import { watchVersionChannel } from './versionRoute'
 import { createCostSource } from './cost'
@@ -56,6 +58,7 @@ export function apply(ctx: Context, config: Config): void {
   watchStepIdentity(ctx)
   const gate = createDetailGate(ctx)
   const bounds = resolveBounds(config)
+  watchAnalysisInterfaces(ctx, createAnalysisService(ctx, bounds, coldReads, pricing))
   const shadow = new DetailShadow(ctx, bounds, coldReads, () => observeOf(ctx))
   watchDetailChannel(ctx, bounds, coldReads, gate, shadow, pricing)
   watchFactsChannel(ctx, bounds, { gates: gate, coldReads, detailState: id => shadow.stateOf(id), cost: pricing })
