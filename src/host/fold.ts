@@ -72,7 +72,7 @@ const PENDING_CODE_CMDS_MAX = 200
 
 const PENDING_CODE_STARTS_MAX = 200
 
-function argsRawOf(value: unknown): string | undefined {
+export function argsRawOf(value: unknown): string | undefined {
   if (typeof value === 'string') return value
   if (value === undefined || value === null) return undefined
   try {

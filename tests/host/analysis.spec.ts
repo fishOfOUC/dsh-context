@@ -29,8 +29,11 @@ describe('session analysis', () => {
   test('queries the complete corpus and filters before pagination', async () => {
     const records = ['one', 'two', 'three'].map(id => ({ header: { id } }))
     const api = createAnalysisService(fakeCtx({ sessionQuery: { listSessions: () => Promise.resolve(records) } }).ctx, bounds, OPEN_GATE)
-    assert.deepEqual(await api.query({ action: 'sessions', limit: 1 }), { schemaVersion: 1, total: 3, sessions: [records[0]], nextOffset: 1 })
-    assert.deepEqual(await api.query({ action: 'sessions', query: 'T', offset: 1, limit: 1 }), { schemaVersion: 1, total: 2, sessions: [records[2]], nextOffset: null })
+    assert.deepEqual(await api.query({ action: 'sessions', limit: 1 }), { schemaVersion: 1, total: 3, sessions: [{ ...records[0], isCurrent: null }], currentSessionId: null, nextOffset: 1 })
+    assert.deepEqual(await api.query({ action: 'sessions', query: 'T', offset: 1, limit: 1 }), { schemaVersion: 1, total: 2, sessions: [{ ...records[2], isCurrent: null }], currentSessionId: null, nextOffset: null })
+    const native = await api.query({ action: 'sessions' }, undefined, 'two') as { currentSessionId: string; sessions: { isCurrent: boolean }[] }
+    assert.equal(native.currentSessionId, 'two')
+    assert.deepEqual(native.sessions.map(row => row.isCurrent), [false, true, false])
     const missing = createAnalysisService(fakeCtx({}).ctx, bounds, OPEN_GATE)
     await assert.rejects(missing.query({ action: 'sessions' }), /listSessions is unavailable/)
     const malformed = createAnalysisService(fakeCtx({ sessionQuery: { listSessions: () => Promise.resolve(null) } }).ctx, bounds, OPEN_GATE)
@@ -71,6 +74,59 @@ describe('session analysis', () => {
     const cost = { read: () => ({ usd: null, ready: false }), usd: () => null, ready: () => false }
     const priced = createAnalysisService(fakeCtx({ sessionQuery: observing(events) }).ctx, bounds, OPEN_GATE, cost)
     assert.equal((await priced.query({ action: 'stats', sessionId: 's1' }) as { statistics: { costRead: { ready: boolean } } }).statistics.costRead.ready, false)
+  })
+
+  test('freezes processed analysis before the current review turn and requires pinned evidence', async () => {
+    const events = [
+      { seq: 0, type: 'turn/start' },
+      header(1),
+      userMessage(2, [{ type: 'text', text: 'work' }]),
+      assistantMessage(3, { turn: 1, step: 0, usage: { inputTokens: 10, cacheReadTokens: 0, cacheWriteTokens: 0, outputTokens: 2 } }),
+      { seq: 4, type: 'turn/end' },
+      { seq: 5, type: 'turn/start' },
+      userMessage(6, [{ type: 'text', text: 'review your token usage' }]),
+    ]
+    const { api } = service(events, { inheritedEventCount: 0 })
+    const result = await api.query({ action: 'overview', sessionId: 's1' }) as { untilSeq: number; snapshot: string; boundary: string }
+    assert.equal(result.untilSeq, 4)
+    assert.equal(result.boundary, 'last-completed-turn')
+    const live = await api.query({ action: 'overview', sessionId: 's1', includeInProgress: true }) as typeof result
+    assert.equal(live.untilSeq, 6)
+    assert.equal(live.boundary, 'observed')
+    const detail = { action: 'detail', sessionId: 's1', ref: 'item:2' }
+    await assert.rejects(api.query(detail), /detail requires/)
+    await assert.rejects(api.query({ ...detail, untilSeq: 4 }), /detail requires/)
+    await assert.rejects(api.query({ ...detail, snapshot: result.snapshot }), /detail requires/)
+    const evidence = await api.query({ ...detail, untilSeq: 4, snapshot: result.snapshot }) as { evidence: { eventSeq: number } }
+    assert.equal(evidence.evidence.eventSeq, 2)
+    const empty = await service([{ seq: 0, type: 'turn/start' }]).api.query({ action: 'overview', sessionId: 's1' }) as typeof result
+    assert.equal(empty.untilSeq, -1)
+  })
+
+  test('exports processed ledgers with optional lossless evidence in both formats', async () => {
+    const events = [userMessage(0, [{ type: 'text', text: 'hi' }]), assistantMessage(1, { turn: 1, step: 0 })]
+    const { api } = service(events)
+    for (const format of ['json', 'jsonl']) {
+      for (const includeEvents of [false, true]) {
+        const path = await output(`report.${format}`)
+        await api.export({ sessionId: 's1', path, format, report: true, includeEvents })
+        const source = await readFile(path, 'utf8')
+        const value = format === 'json' ? JSON.parse(source) : JSON.parse(source.split('\n')[0])
+        assert.equal(value.analysis.reportedUsage.requests, 1)
+        assert.equal(value.analysis.attribution.reconciled, true)
+        assert.equal(value.exportedEventCount, includeEvents ? 2 : 0)
+        if (format === 'json') {
+          assert.equal(value.requests.length, 1)
+          assert.equal(value.items.length, 2)
+          assert.equal(value.calls.length, 0)
+          assert.deepEqual(value.events, includeEvents ? events : [])
+        } else {
+          const rows = source.trim().split('\n').slice(1).map(line => JSON.parse(line))
+          assert.equal(rows.filter(row => row.type === 'dsh-context/requests').length, 1)
+          assert.equal(rows.filter(row => row.type === 'dsh-context/items').length, 2)
+        }
+      }
+    }
   })
 
   test('exports JSON and JSONL losslessly, includes unknown event types, and refuses overwrites', async () => {

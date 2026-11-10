@@ -2,7 +2,7 @@
 
 Rules dsh-context holds on every supported `@deepseek-ai/dsh` release, and the evidence for each. Unmarked paths are in this repo; `dsh:` paths are in the harness tree read at the per-line floor tag (`dsh-v0.2.0-rc.2`, `dsh-v0.2.1-rc.2`, `dsh-v0.2.2-rc.1`) unless another tag is named. A `.../` prefix continues the preceding path's directory. Source wins over this page.
 
-Last verified: **2026-11-09** (dsh-context `0.83.0`; dsh floors `0.2.0-rc.2`, `0.2.1-rc.2`, `0.2.2-rc.1`, plus the `0.2.1-rc.2`…`rc.5` diffs).
+Last verified: **2026-11-10** (dsh-context `0.83.0`; dsh floors `0.2.0-rc.2`, `0.2.1-rc.2`, `0.2.2-rc.1`, plus the `0.2.1-rc.2`…`rc.5` diffs).
 
 ## 1 · Supported set
 
@@ -135,6 +135,7 @@ Last verified: **2026-11-09** (dsh-context `0.83.0`; dsh floors `0.2.0-rc.2`, `0
 ## 9 · Verification
 
 - **AI analysis seam:** optional native `tools.register` uses the canonical `output.schema`/`output.render`/`execute(args, exec)` contract present in `dsh-v0.2.0-rc.2:packages/core/tools/src/index.ts` and `dsh-v0.2.2-rc.1:packages/core/tools/src/contracts.ts`; the calling identity is `exec.agent.id`. Full-log reads use `sessionQuery.observeSession(..., {projectionMode:'none'})` and its disposable immutable cut, unchanged across the three floors (`dsh: packages/session-query/session-query/src/observation.ts`). Prepared cuts can contain recovery closers; exports represent observed events, not original persistence bytes. No projection state version changes. The stdio bridge is a separate entry and never loads MCP runtime into the plugin host.
+- **AI attribution boundary:** processed reports settle usage samples per attempt, preserving retries and unknown counters (`dsh: packages/llm/token-meter/src/usage-projection.ts`, unchanged semantics across floors). Historical carrying estimates reuse the plugin surface fold and schema estimator, not provider wire reconstruction. Shared display proportions remain current-composition estimates. Family reads follow durable delegation facts and sum only own attempts; member cuts are independent. See [AI session analysis](analysis.md) for evidence references and pagination.
 
 *How every claim above is proven.*
 
